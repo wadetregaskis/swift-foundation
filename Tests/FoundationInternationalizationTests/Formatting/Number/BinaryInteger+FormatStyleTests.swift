@@ -208,7 +208,8 @@ final class BinaryIntegerFormatStyleTestsUsingBinaryIntegerWords: XCTestCase {
     // MARK: Assertions
      
     func check(integer: some BinaryInteger, expectation: String, file: StaticString = #file, line: UInt = #line) {
-        XCTAssertEqual(integer.description, expectation, file: file, line: line)
+        XCTAssertEqual(integer.description, expectation,  file:  file, line: line)
+        check(ascii: integer.numericStringRepresentation, expectation: expectation, file: file, line: line)
         check(words: Array(integer.words), isSigned: type(of: integer).isSigned, expectation: expectation, file: file, line: line)
     }
     
@@ -218,6 +219,10 @@ final class BinaryIntegerFormatStyleTestsUsingBinaryIntegerWords: XCTestCase {
     
     func check(words: [UInt], isSigned: Bool, expectation: String, file: StaticString = #file, line: UInt = #line) {
         let ascii = numericStringRepresentationForBinaryInteger(words: words, isSigned: isSigned)
+        check(ascii: ascii, expectation: expectation, file: file, line: line)
+    }
+    
+    func check(ascii: some Collection<UInt8>, expectation: String, file: StaticString = #file, line: UInt = #line) {
         XCTAssertEqual(String(decoding: ascii, as: Unicode.ASCII.self), expectation, file: file, line: line)
     }
 }
