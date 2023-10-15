@@ -208,15 +208,20 @@ private func maxDecimalExponentAndPowerForUnsignedIntegerWord() -> (exponent: UI
     return (exponent: exponent, power: power)
 }
 
-/// The maximum [number of decimal digits][number-of-digits] needed the represent
-/// an unsigned integer with the given `bitWidth`.
+/// The maximum [number of decimal digits][algorithm] needed the represent an unsigned integer
+/// with the given `bitWidth`.
 ///
 /// - Parameter bitWidth: The unsigned binary integer's bit width.
 ///
-/// [number-of-digits]: https://www.exploringbinary.com/number-of-decimal-digits-in-a-binary-integer
+/// ### Development
+///
+/// It rounds up and uses `Double.init(exactly:)` as a rounding error precaution, which limits
+/// the `bitWidth` to `0...pow(2, 53)`. This value is an upper bound, and it need not be exact.
+///
+/// [algorithm]: https://www.exploringbinary.com/number-of-decimal-digits-in-a-binary-integer
 ///
 private func maxDecimalDigitCountForUnsignedInteger(bitWidth: Int) -> Int {
-    Int((Double(UInt(bitWidth)) * log10(2)).rounded(.down)) + 1
+    Int((Double(exactly: UInt(bitWidth))! * log10(2)).rounded(.up)) + 1
 }
 
 // MARK: - BinaryInteger + Parsing
