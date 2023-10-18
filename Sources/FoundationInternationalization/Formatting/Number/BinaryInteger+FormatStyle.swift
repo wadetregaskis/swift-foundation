@@ -94,8 +94,8 @@ words: UnsafeMutableBufferPointer<UInt>, isSigned: Bool) -> ArraySlice<UInt8> {
     }
     
     let radix: (exponent: UInt, power: UInt) = maxDecimalExponentAndPowerForUnsignedIntegerWord()
-    let capacity: Int = maxDecimalDigitCountForUnsignedInteger(bitWidth: max(1, words.count * UInt.bitWidth)) + (isLessThanZero ? 1 : 0)
-    var ascii = ContiguousArray(repeating: UInt8(ascii: "0"), count: capacity) // Fills the array with ASCII zeros (see later steps).
+    let capacity =  maxDecimalDigitCountForUnsignedInteger(bitWidth: words.count * UInt.bitWidth) + (isLessThanZero ? 1 : 0)
+    var ascii = ContiguousArray(repeating: UInt8(ascii: "0"), count: capacity) // Sets initial ASCII zeros (see later steps).
     
     var wordsIndex = words.endIndex
     var writeIndex = ascii.endIndex
@@ -208,20 +208,18 @@ private func maxDecimalExponentAndPowerForUnsignedIntegerWord() -> (exponent: UI
     return (exponent: exponent, power: power)
 }
 
-/// The maximum [number of decimal digits][algorithm] needed the represent an unsigned integer
-/// with the given `bitWidth`.
-///
-/// - Parameter bitWidth: The unsigned binary integer's bit width.
-///
-/// ### Development
-///
-/// It rounds up and uses `Double.init(exactly:)` as a rounding error precaution, which limits
-/// the `bitWidth` to `0...pow(2, 53)`. This value is an upper bound, and it need not be exact.
+/// Returns an upper bound for the [number of decimal digits][algorithm] needed
+/// to represent an unsigned integer with the given `bitWidth`.
 ///
 /// [algorithm]: https://www.exploringbinary.com/number-of-decimal-digits-in-a-binary-integer
 ///
+/// - Parameter bitWidth: The unsigned binary integer's bit width.
+///
 private func maxDecimalDigitCountForUnsignedInteger(bitWidth: Int) -> Int {
-    Int((Double(exactly: UInt(bitWidth))! * log10(2)).rounded(.up)) + 1
+    // - Int.init(some BinaryFloatingPoint) rounds to zero.
+    // - log10(2.0) is overestimated: 0.301029995663981⌈19.....⌉.
+    // - Double.init(exactly:) and UInt.init(_:) for correctness.
+    return Int(Double(exactly: UInt(bitWidth))! * log10(2.0)) + 1
 }
 
 // MARK: - BinaryInteger + Parsing
