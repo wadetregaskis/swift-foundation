@@ -217,8 +217,8 @@ private func maxDecimalExponentAndPowerForUnsignedIntegerWord() -> (exponent: UI
 ///
 private func maxDecimalDigitCountForUnsignedInteger(bitWidth: Int) -> Int {
     // - Int.init(some BinaryFloatingPoint) rounds to zero.
-    // - log10(2.0) is overestimated: 0.301029995663981⌈19.....⌉.
     // - Double.init(exactly:) and UInt.init(_:) for correctness.
+    // - log10(2.0) is: 1.0011010001000001001101⌈01...⌉ * 2^(-2).
     return Int(Double(exactly: UInt(bitWidth))! * log10(2.0)) + 1
 }
 
