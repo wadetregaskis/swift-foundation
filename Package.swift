@@ -30,7 +30,7 @@ let package = Package(
             revision: "0c1de7149a39a9ff82d4db66234dec587b30a3ad"),
         .package(
             url: "https://github.com/apple/swift-syntax.git",
-            from: "509.0.0")
+            from: "509.0.2")
     ],
     targets: [
         // Foundation (umbrella)
@@ -58,6 +58,7 @@ let package = Package(
           name: "FoundationEssentials",
           dependencies: [
             "_CShims",
+            "FoundationMacros",
             .product(name: "_RopeModule", package: "swift-collections"),
           ],
           swiftSettings: [
@@ -116,11 +117,4 @@ package.targets.append(contentsOf: [
         "FoundationInternationalization"
     ], swiftSettings: availabilityMacros),
 ])
-#endif
-
-#if !os(Windows)
-// Using macros at build-time is not yet supported on Windows
-if let index = package.targets.firstIndex(where: { $0.name == "FoundationEssentials" }) {
-    package.targets[index].dependencies.append("FoundationMacros")
-}
 #endif
