@@ -40,6 +40,13 @@ extension PredicateExpressions {
     }
 }
 
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.DictionaryKeySubscript : CustomStringConvertible {
+    public var description: String {
+        "DictionaryKeySubscript(wrapped: \(wrapped), key: \(key))"
+    }
+}
+
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 extension PredicateExpressions.DictionaryKeySubscript : Sendable where Wrapped : Sendable, Key : Sendable {}
 
@@ -93,6 +100,13 @@ extension PredicateExpressions {
     
     public static func build_subscript<Wrapped, Key, Default>(_ wrapped: Wrapped, _ key: Key, default: Default) -> DictionaryKeyDefaultValueSubscript<Wrapped, Key, Default> {
         DictionaryKeyDefaultValueSubscript(wrapped: wrapped, key: key, default: `default`)
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.DictionaryKeyDefaultValueSubscript : CustomStringConvertible {
+    public var description: String {
+        "DictionaryKeyDefaultValueSubscript(wrapped: \(wrapped), key: \(key), defaultValue: \(`default`))"
     }
 }
 

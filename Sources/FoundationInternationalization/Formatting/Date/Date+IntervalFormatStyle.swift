@@ -16,15 +16,27 @@ import FoundationEssentials
 
 extension Date {
 
+    /// A format style that creates string representations of date intervals.
+    ///
+    /// Use `Date.IntervalFormatStyle` to create user-readable strings of date intervals.
+    /// The format style provides customization to show specific date and time components.
     @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
     public struct IntervalFormatStyle : Codable, Hashable, Sendable {
 
+        /// The type that defines date interval styles that vary in length or in their included components.
         public typealias DateStyle = Date.FormatStyle.DateStyle
+        /// The type that defines time styles that vary in length or in their included components.
         public typealias TimeStyle = Date.FormatStyle.TimeStyle
 
+        /// The locale to use when formatting date interval values.
         public var locale: Locale
+        /// The time zone with which to specify date and time values.
         public var timeZone: TimeZone
+        /// The calendar to use for date values.
         public var calendar: Calendar
+
+        // Internal
+        internal var symbols =  Date.FormatStyle.DateFieldCollection()
 
         /// Creates a new `FormatStyle` with the given configurations.
         /// - Parameters:
@@ -52,31 +64,26 @@ extension Date {
 
         // MARK: - FormatStyle conformance
 
+        /// Creates a locale-aware string representation from a date interval.
+        ///
+        /// - Parameter v: The date range to format.
+        /// - Returns: A string representation of the date range.
         public func format(_ v: Range<Date>) -> String {
-            let formatter = Self.cache.formatter(for: self) {
-                var template = symbols.formatterTemplate(overridingDayPeriodWithLocale: locale)
-
-                if template.isEmpty {
-                    let defaultSymbols = Date.FormatStyle.DateFieldCollection()
-                        .collection(date: .numeric)
-                        .collection(time: .shortened)
-                    template = defaultSymbols.formatterTemplate(overridingDayPeriodWithLocale: locale)
-                }
-
-                return ICUDateIntervalFormatter(locale: locale, calendar: calendar, timeZone: timeZone, dateTemplate: template)
+            guard let formatter = ICUDateIntervalFormatter.formatter(for: self), let result = formatter.string(from: v) else {
+                return "\(v.lowerBound.description) - \(v.upperBound.description)"
             }
-            return formatter.string(from: v)
+            return result
         }
 
+        /// Modifies the date interval format style to use the specified locale.
+        ///
+        /// - Parameter locale: The locale for formatting a date interval.
+        /// - Returns: A date interval format style with the provided locale.
         public func locale(_ locale: Locale) -> Self {
             var new = self
             new.locale = locale
             return new
         }
-
-        // Internal
-        private var symbols =  Date.FormatStyle.DateFieldCollection()
-        private static let cache = FormatterCache<Self, ICUDateIntervalFormatter>()
     }
 }
 
@@ -86,50 +93,79 @@ extension Date.IntervalFormatStyle : FormatStyle {}
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 extension Date.IntervalFormatStyle {
 
+    /// The type that supports customizing formatting templates using the date format style's modifier functions, and constructing fixed-pattern date format strings.
     public typealias Symbol = Date.FormatStyle.Symbol
 
+    /// Modifies the date interval format style to include the year.
+    ///
+    /// - Returns: A date interval format style that includes the year.
     public func year() -> Self {
         var new = self
         new.symbols.year = .defaultDigits
         return new
     }
 
+    /// Modifies the date interval format style to include the month.
+    ///
+    /// - Parameter format: The month format style to apply.
+    /// - Returns: A date interval format style that includes the specified month style.
     public func month(_ format: Symbol.Month = .abbreviated) -> Self {
         var new = self
         new.symbols.month = format.option
         return new
     }
 
+    /// Modifies the date interval format style to include the day.
+    ///
+    /// - Returns: A date interval format style that includes the day.
     public func day() -> Self {
         var new = self
         new.symbols.day = .defaultDigits
         return new
     }
 
+    /// Modifies the date interval format style to include the weekday.
+    ///
+    /// - Parameter format: The weekday format style to apply.
+    /// - Returns: A date interval format style that includes the specified weekday style.
     public func weekday(_ format: Symbol.Weekday = .abbreviated) -> Self {
         var new = self
         new.symbols.weekday = format.option
         return new
     }
 
+    /// Modifies the date interval format style to include the hour.
+    ///
+    /// - Parameter format: The hour format style to apply.
+    /// - Returns: A date interval format style that includes the specified hour style.
     public func hour(_ format: Symbol.Hour = .defaultDigits(amPM: .abbreviated)) -> Self {
         var new = self
         new.symbols.hour = format.option
         return new
     }
 
+    /// Modifies the date interval format style to include the minute.
+    ///
+    /// - Returns: A date interval format style that includes the minute.
     public func minute() -> Self {
         var new = self
         new.symbols.minute = .defaultDigits
         return new
     }
 
+    /// Modifies the date interval format style to include the second.
+    ///
+    /// - Returns: A date interval format style that includes the second.
     public func second() -> Self {
         var new = self
         new.symbols.second = .defaultDigits
         return new
     }
 
+    /// Modifies the date interval format style to include the time zone.
+    ///
+    /// - Parameter format: The time zone format style to apply.
+    /// - Returns: A date interval format style that includes the specified time zone style.
     public func timeZone(_ format: Symbol.TimeZone = .genericName(.short)) -> Self {
         var new = self
         new.symbols.timeZoneSymbol = format.option
@@ -139,6 +175,7 @@ extension Date.IntervalFormatStyle {
 
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 public extension FormatStyle where Self == Date.IntervalFormatStyle {
+    /// A factory variable used to format a date interval.
     static var interval: Self {
         return Date.IntervalFormatStyle()
     }

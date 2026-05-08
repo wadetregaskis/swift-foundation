@@ -14,6 +14,11 @@
 extension PredicateExpressions {
     public enum ComparisonOperator: Codable, Sendable {
         case lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual
+        
+        private typealias LessThanCodingKeys = EmptyCodingKeys
+        private typealias LessThanOrEqualCodingKeys = EmptyCodingKeys
+        private typealias GreaterThanCodingKeys = EmptyCodingKeys
+        private typealias GreaterThanOrEqualCodingKeys = EmptyCodingKeys
     }
 
     public struct Comparison<
@@ -51,6 +56,13 @@ extension PredicateExpressions {
     
     public static func build_Comparison<LHS, RHS>(lhs: LHS, rhs: RHS, op: ComparisonOperator) -> Comparison<LHS, RHS> {
         Comparison(lhs: lhs, rhs: rhs, op: op)
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.Comparison : CustomStringConvertible {
+    public var description: String {
+        "Comparison(lhs: \(lhs), operator: \(op), rhs: \(rhs))"
     }
 }
 

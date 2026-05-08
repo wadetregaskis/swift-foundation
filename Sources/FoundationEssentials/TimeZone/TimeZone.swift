@@ -10,15 +10,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- `TimeZone` defines the behavior of a time zone. Time zone values represent geopolitical regions. Consequently, these values have names for these regions. Time zone values also represent a temporal offset, either plus or minus, from Greenwich Mean Time (GMT) and an abbreviation (such as PST for Pacific Standard Time).
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+@preconcurrency import Glibc
+#endif
 
- `TimeZone` provides two static functions to get time zone values: `current` and `autoupdatingCurrent`. The `autoupdatingCurrent` time zone automatically tracks updates made by the user.
+internal import _FoundationCShims
 
- Note that time zone database entries such as "America/Los_Angeles" are IDs, not names. An example of a time zone name is "Pacific Daylight Time". Although many `TimeZone` functions include the word "name", they refer to IDs.
-
- Cocoa does not provide any API to change the time zone of the computer, or of other applications.
- */
+/// Information about standard time conventions associated with a specific geopolitical region.
+///
+/// `TimeZone` defines the behavior of a time zone. Time zone values represent geopolitical regions. Consequently,
+/// these values have names for these regions. Time zone values also represent a temporal offset, either plus or
+/// minus, from Greenwich Mean Time (GMT) and an abbreviation (such as PST for Pacific Standard Time).
+///
+/// `TimeZone` provides two static functions to get time zone values: `current` and `autoupdatingCurrent`. The
+/// `autoupdatingCurrent` time zone automatically tracks updates made by the user.
+///
+/// Note that time zone database entries such as "America/Los_Angeles" are IDs, not names. An example of a time
+/// zone name is "Pacific Daylight Time". Although many `TimeZone` functions include the word "name", they refer
+/// to IDs.
+///
+/// Cocoa does not provide any API to change the time zone of the computer, or of other applications.
 @available(macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, *)
 public struct TimeZone : Hashable, Equatable, Sendable {
     private var _tz: _TimeZoneProtocol
@@ -41,7 +54,7 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     }
 
     /// Directly instantiates a time zone without causing infinite recursion by checking the cache.
-    internal init(inner: some _TimeZoneProtocol) {
+    package init(inner: some _TimeZoneProtocol) {
         _tz = inner
     }
 
@@ -52,19 +65,14 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     /// - parameter seconds: The number of seconds from GMT.
     /// - returns: A time zone, or `nil` if a valid time zone could not be created from `seconds`.
     public init?(secondsFromGMT seconds: Int) {
-        guard let cached = TimeZoneCache.cache.offsetFixed(seconds) else {
-            return nil
-        }
-
-        _tz = cached
-    }
-
-    internal init?(name: String) {
-        // Try the cache first
-        if let cached = TimeZoneCache.cache.fixed(name) {
-            _tz = cached
+        if seconds == 0 {
+            _tz = TimeZoneCache.cache.gmt
         } else {
-            return nil
+            guard let cached = TimeZoneCache.cache.offsetFixed(seconds) else {
+                return nil
+            }
+            
+            _tz = cached
         }
     }
 
@@ -108,7 +116,7 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     #endif
 
     /// The time zone currently used by the system.
-    public static var current : TimeZone {
+    public static var current: TimeZone {
         TimeZone(inner: TimeZoneCache.cache.current._tz)
     }
 
@@ -117,8 +125,8 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     /// If this time zone is mutated, then it no longer tracks the system time zone.
     ///
     /// The autoupdating time zone only compares equal to itself.
-    public static var autoupdatingCurrent : TimeZone {
-        TimeZone(inner: TimeZoneCache.cache.autoupdatingCurrent())
+    public static var autoupdatingCurrent: TimeZone {
+        TimeZone(inner: TimeZoneCache.cache.autoupdatingCurrent)
     }
 
     /// The default time zone, settable via ObjC but not available in Swift API (because it's global mutable state).
@@ -131,6 +139,17 @@ public struct TimeZone : Hashable, Equatable, Sendable {
             TimeZoneCache.cache.setDefault(newValue)
         }
     }
+    
+#if !FOUNDATION_FRAMEWORK
+    @_spi(SwiftCorelibsFoundation) public static var _default : TimeZone! {
+        get {
+            TimeZone.default
+        }
+        set {
+            TimeZone.default = newValue
+        }
+    }
+#endif
 
     // MARK: -
     //
@@ -150,6 +169,15 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     /// - parameter date: The date to use for the calculation. The default value is the current date.
     public func secondsFromGMT(for date: Date = Date()) -> Int {
         _tz.secondsFromGMT(for: date)
+    }
+    
+    /// If the time zone does not observe daylight savings, then return the constant offset from GMT. Otherwise, returns nil.
+    internal var fixedOffsetFromGMT: Int? {
+        _tz.fixedOffsetFromGMT
+    }
+
+    internal func rawAndDaylightSavingTimeOffset(for date: Date, repeatedTimePolicy: TimeZone.DaylightSavingTimePolicy = .former, skippedTimePolicy: TimeZone.DaylightSavingTimePolicy = .former) -> (rawOffset: Int, daylightSavingOffset: TimeInterval) {
+        _tz.rawAndDaylightSavingTimeOffset(for: date, repeatedTimePolicy: repeatedTimePolicy, skippedTimePolicy: skippedTimePolicy)
     }
 
     /// Returns the abbreviation for the time zone at a given date.
@@ -193,7 +221,10 @@ public struct TimeZone : Hashable, Equatable, Sendable {
         }
     }
 
-    /// Returns the date of the next (after the current instant) daylight saving time transition for the time zone. Depending on the time zone, the value of this property may represent a change of the time zone's offset from GMT. Returns `nil` if the time zone does not currently observe daylight saving time.
+    /// The date of the next (after the current instant) daylight saving time transition for the time zone.
+    ///
+    /// Depending on the time zone, the value of this property may represent a change of the time zone's offset
+    /// from GMT. The value is `nil` if the time zone does not currently observe daylight saving time.
     public var nextDaylightSavingTimeTransition: Date? {
         _tz.nextDaylightSavingTimeTransition(after: Date.now)
     }
@@ -217,6 +248,10 @@ public struct TimeZone : Hashable, Equatable, Sendable {
     }
 
     public static func ==(lhs: TimeZone, rhs: TimeZone) -> Bool {
+        if lhs._tz === rhs._tz {
+            return true
+        }
+        
         // Autoupdating is only ever equal to autoupdating. Other time zones compare their values.
         if lhs._tz.isAutoupdating && rhs._tz.isAutoupdating {
             return true
@@ -238,6 +273,7 @@ public struct TimeZone : Hashable, Equatable, Sendable {
 @available(macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, *)
 extension TimeZone {
 #if !FOUNDATION_FRAMEWORK
+/// Enum you use to specify different name style of a time zone.
     public enum NameStyle : Int, Sendable {
         /// Specifies a standard name style. For example, “Central Standard Time” for Central Time.
         case standard
@@ -307,6 +343,9 @@ extension TimeZone : Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         // Even if we are autoupdatingCurrent, encode the identifier for backward compatibility
         try container.encode(self.identifier, forKey: .identifier)
+        
+        // Autoupdating current timezones are treated as sentinel values, but the current TimeZone is encoded as a fixed TimeZone
+        // This is the same behavior as Locale/Calendar except it did not previously encode as a sentinel value before FoundationPreview 6.3, so no extra key is encoded for the current time zone
         if _tz.isAutoupdating {
             try container.encode(true, forKey: .autoupdating)
         }
@@ -355,16 +394,43 @@ extension NSTimeZone : _HasCustomAnyHashableRepresentation {
 #endif
 
 extension TimeZone {
-    // Defines from tzfile.h
-#if targetEnvironment(simulator)
-    internal static let TZDIR = "/usr/share/zoneinfo"
-#else
-    internal static let TZDIR = "/var/db/timezone/zoneinfo"
-#endif // targetEnvironment(simulator)
+    // Specifies which occurrence of time to use when it falls into the repeated hour or the skipped hour during DST transition day
+    // For the skipped time frame when transitioning into DST (e.g. 1:00 - 3:00 AM for PDT), use `.former`  if asking for the occurrence when DST hasn't happened yet
+    // For the repeated time frame when DST ends (e.g. 1:00 - 2:00 AM for PDT), use .former if asking for the instance before turning back the clock
+    package enum DaylightSavingTimePolicy {
+        case former
+        case latter
+    }
+}
 
-#if os(macOS) || targetEnvironment(simulator)
-    internal static let TZDEFAULT = "/etc/localtime"
+extension TimeZone {
+    internal static func dataFromTZFile(_ name: String) -> Data {
+#if NO_TZFILE || os(Windows) || os(WASI)
+        return Data()
 #else
-    internal static let TZDEFAULT = "/var/db/timezone/localtime"
-#endif // os(macOS) || targetEnvironment(simulator)
+        let path = TZDIR + "/" + name
+        guard !path.contains("..") else {
+            // No good reason for .. to be present anywhere in the path
+            return Data()
+        }
+        return (try? Data(contentsOfFile: path)) ?? Data()
+#endif
+    }
+
+    internal static func resetSystemTimeZone() -> TimeZone? {
+        let oldTimeZone = TimeZoneCache.cache.reset()
+        // Also reset the calendar cache, since the current calendar uses the current time zone
+        LocaleNotifications.cache.reset()
+        return oldTimeZone
+    }
+    
+#if !FOUNDATION_FRAMEWORK
+    @_spi(SwiftCorelibsFoundation) public static func _dataFromTZFile(_ name: String) -> Data {
+        TimeZone.dataFromTZFile(name)
+    }
+    
+    @_spi(SwiftCorelibsFoundation) public static func _resetSystemTimeZone() -> TimeZone? {
+        TimeZone.resetSystemTimeZone()
+    }
+#endif
 }

@@ -48,6 +48,13 @@ extension PredicateExpressions {
     }
 }
 
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.Conditional : CustomStringConvertible {
+    public var description: String {
+        "Conditional(test: \(test), trueBranch: \(trueBranch), falseBranch: \(falseBranch))"
+    }
+}
+
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 extension PredicateExpressions.Conditional : StandardPredicateExpression where Test : StandardPredicateExpression, If : StandardPredicateExpression, Else : StandardPredicateExpression {}
 

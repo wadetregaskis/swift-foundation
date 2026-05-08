@@ -11,20 +11,32 @@
 //===----------------------------------------------------------------------===//
 
 #if FOUNDATION_FRAMEWORK
-@_implementationOnly @_spi(Unstable) import CollectionsInternal
-#else
-package import _RopeModule
+@_spi(Unstable) internal import CollectionsInternal
+#elseif canImport(_RopeModule)
+internal import _RopeModule
+#elseif canImport(_FoundationCollections)
+internal import _FoundationCollections
 #endif
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension AttributedString {
+    /// A type that transforms an attribute by altering its range or value, or by replacing it entirely.
+    ///
+    /// For simple transformations, the closure you provide to the `transformingAttributes(…)` methods of ``AttributedString`` can use this instance to change the attribute's value. You can also use this instance to change the range of the string that the attribute applies to. To completely replace the attribute with an attribute of a different type, use ``replace(with:value:)-6bn0e``.
     @preconcurrency
     public struct SingleAttributeTransformer<T: AttributedStringKey> : Sendable where T.Value : Sendable {
+        /// The range of the attribute in the attributed string.
+        ///
+        /// Use this property to examine or alter the range that the attribute
+        /// applies to.
         public var range: Range<Index>
 
         internal var attrName = T.name
         internal var attr : _AttributeValue?
 
+        /// The value of the attribute.
+        ///
+        /// Use this property to examine or alter the attribute value.
         public var value: T.Value? {
             get { attr?.rawValue(as: T.self) }
             set { attr = .wrapIfPresent(newValue, for: T.self) }
@@ -50,7 +62,9 @@ extension AttributedString {
         andChanged changed: AttributedString.SingleAttributeTransformer<K>,
         to attrStr: inout AttributedString,
         key: K.Type
-    ) {
+    ) 
+    where
+        K.Value : Sendable {
         if orig.range != changed.range || orig.attrName != changed.attrName {
             attrStr._guts.removeAttributeValue(forKey: K.self, in: orig.range._bstringRange) // If the range changed, we need to remove from the old range first.
         }
@@ -61,7 +75,7 @@ extension AttributedString {
         andChanged changed: AttributedString.SingleAttributeTransformer<K>,
         to attrStr: inout AttributedString,
         key: K.Type
-    ) {
+    ) where K.Value : Sendable {
         if orig.range != changed.range || orig.attrName != changed.attrName || orig.attr != changed.attr {
             if let newVal = changed.attr { // Then if there's a new value, we add it in.
                 // Unfortunately, we can't use the attrStr[range].set() provided by the AttributedStringProtocol, because we *don't know* the new type statically!
@@ -76,10 +90,19 @@ extension AttributedString {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension AttributedString {
+    /// Returns an attributed string by calling a closure that transforms one attribute of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The ``AttributedStringKey`` that identifies the attribute to transform.
+    ///   - c: The closure that receives an ``AttributedString/SingleAttributeTransformer`` that you use to access and alter the attribute's range and value.
+    /// - Returns: An attributed string with the applied transformation to the specified attribute.
+    @preconcurrency
     public func transformingAttributes<K>(
         _ k:  K.Type,
         _ c: (inout AttributedString.SingleAttributeTransformer<K>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K.Value : Sendable {
         let orig = AttributedString(_guts)
         var copy = orig
         copy.ensureUniqueReference() // ???: Is this best practice? We're going behind the back of the AttributedString mutation API surface, so it doesn't happen anywhere else. It's also aggressively speculative.
@@ -93,12 +116,23 @@ extension AttributedString {
         return copy
     }
 
+    /// Returns an attributed string by calling a closure that transforms two attributes of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - c: A closure that receives two ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2>(
         _ k:  K1.Type,
         _ k2: K2.Type,
         _ c: (inout AttributedString.SingleAttributeTransformer<K1>,
               inout AttributedString.SingleAttributeTransformer<K2>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable {
         let orig = AttributedString(_guts)
         var copy = orig
         copy.ensureUniqueReference() // ???: Is this best practice? We're going behind the back of the AttributedString mutation API surface, so it doesn't happen anywhere else. It's also aggressively speculative.
@@ -116,6 +150,15 @@ extension AttributedString {
         return copy
     }
 
+    /// Returns an attributed string by calling a closure that transforms three attributes of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - c: A closure that receives three ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3>(
         _ k:  K1.Type,
         _ k2: K2.Type,
@@ -123,7 +166,11 @@ extension AttributedString {
         _ c: (inout AttributedString.SingleAttributeTransformer<K1>,
               inout AttributedString.SingleAttributeTransformer<K2>,
               inout AttributedString.SingleAttributeTransformer<K3>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable {
         let orig = AttributedString(_guts)
         var copy = orig
         copy.ensureUniqueReference() // ???: Is this best practice? We're going behind the back of the AttributedString mutation API surface, so it doesn't happen anywhere else. It's also aggressively speculative.
@@ -145,6 +192,16 @@ extension AttributedString {
         return copy
     }
 
+    /// Returns an attributed string by calling a closure that transforms four attributes of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - k4: The ``AttributedStringKey`` that identifies a fourth attribute to transform.
+    ///   - c: A closure that receives four ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3, K4>(
         _ k:  K1.Type,
         _ k2: K2.Type,
@@ -154,7 +211,12 @@ extension AttributedString {
               inout AttributedString.SingleAttributeTransformer<K2>,
               inout AttributedString.SingleAttributeTransformer<K3>,
               inout AttributedString.SingleAttributeTransformer<K4>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable,
+        K4.Value : Sendable {
         let orig = AttributedString(_guts)
         var copy = orig
         copy.ensureUniqueReference() // ???: Is this best practice? We're going behind the back of the AttributedString mutation API surface, so it doesn't happen anywhere else. It's also aggressively speculative.
@@ -180,6 +242,17 @@ extension AttributedString {
         return copy
     }
 
+    /// Returns an attributed string created by calling a closure that transforms five attributes of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - k4: The ``AttributedStringKey`` that identifies a fourth attribute to transform.
+    ///   - k5: The ``AttributedStringKey`` that identifies a fifth attribute to transform.
+    ///   - c: A closure that receives five ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3, K4, K5>(
         _ k:  K1.Type,
         _ k2: K2.Type,
@@ -191,7 +264,13 @@ extension AttributedString {
               inout AttributedString.SingleAttributeTransformer<K3>,
               inout AttributedString.SingleAttributeTransformer<K4>,
               inout AttributedString.SingleAttributeTransformer<K5>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable,
+        K4.Value : Sendable,
+        K5.Value : Sendable {
         let orig = AttributedString(_guts)
         var copy = orig
         copy.ensureUniqueReference() // ???: Is this best practice? We're going behind the back of the AttributedString mutation API surface, so it doesn't happen anywhere else. It's also aggressively speculative.
@@ -224,22 +303,51 @@ extension AttributedString {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension AttributedString {
+    /// Returns an attributed string by calling a closure that transforms one attribute, which a key path identifies, of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The key path to the ``AttributedStringKey`` that identifies the attribute to transform.
+    ///   - c: The closure that receives an ``AttributedString/SingleAttributeTransformer`` that you use to access and alter the attribute's range and value.
+    /// - Returns: An attributed string with the applied transformation to the specified attribute.
+    @preconcurrency
     public func transformingAttributes<K>(
         _ k: KeyPath<AttributeDynamicLookup, K>,
         _ c: (inout AttributedString.SingleAttributeTransformer<K>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K.Value : Sendable {
         self.transformingAttributes(K.self, c)
     }
 
+    /// Returns an attributed string created by calling a closure that transforms two attributes, which key paths identify, of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The key path to an ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The key path to an ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - c: A closure that receives two ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2>(
         _ k:  KeyPath<AttributeDynamicLookup, K1>,
         _ k2: KeyPath<AttributeDynamicLookup, K2>,
         _ c: (inout AttributedString.SingleAttributeTransformer<K1>,
               inout AttributedString.SingleAttributeTransformer<K2>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable {
         self.transformingAttributes(K1.self, K2.self, c)
     }
 
+    /// Returns an attributed string by calling a closure that transforms three attributes, which key paths identify, of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The key path to an ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The key path to an ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The key path to an ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - c: A closure that receives three ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3>(
         _ k:  KeyPath<AttributeDynamicLookup, K1>,
         _ k2: KeyPath<AttributeDynamicLookup, K2>,
@@ -247,10 +355,24 @@ extension AttributedString {
         _ c: (inout AttributedString.SingleAttributeTransformer<K1>,
               inout AttributedString.SingleAttributeTransformer<K2>,
               inout AttributedString.SingleAttributeTransformer<K3>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable {
         self.transformingAttributes(K1.self, K2.self, K3.self, c)
     }
 
+    /// Returns an attributed string created by calling a closure that transforms four attributes, which key paths identify, of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The key path to an ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The key path to an ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The key path to an ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - k4: The key path to an ``AttributedStringKey`` that identifies a fourth attribute to transform.
+    ///   - c: A closure that receives four ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string with the applied transformations to the specified attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3, K4>(
         _ k:  KeyPath<AttributeDynamicLookup, K1>,
         _ k2: KeyPath<AttributeDynamicLookup, K2>,
@@ -260,10 +382,26 @@ extension AttributedString {
               inout AttributedString.SingleAttributeTransformer<K2>,
               inout AttributedString.SingleAttributeTransformer<K3>,
               inout AttributedString.SingleAttributeTransformer<K4>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable,
+        K4.Value : Sendable {
         self.transformingAttributes(K1.self, K2.self, K3.self, K4.self, c)
     }
 
+    /// Returns an attributed string created by calling a closure that transforms five attributes, which key paths identify, of a source attributed string.
+    ///
+    /// - Parameters:
+    ///   - k: The key path to an ``AttributedStringKey`` that identifies an attribute to transform.
+    ///   - k2: The key path to an ``AttributedStringKey`` that identifies a second attribute to transform.
+    ///   - k3: The key path to an ``AttributedStringKey`` that identifies a third attribute to transform.
+    ///   - k4: The key path to an ``AttributedStringKey`` that identifies a fourth attribute to transform.
+    ///   - k5: The key path to an ``AttributedStringKey`` that identifies a fifth attribute to transform.
+    ///   - c: A closure that receives five ``AttributedString/SingleAttributeTransformer`` instances that you use to access and alter the attributes' ranges and values.
+    /// - Returns: An attributed string, with the applied transformations to the given attributes.
+    @preconcurrency
     public func transformingAttributes<K1, K2, K3, K4, K5>(
         _ k:  KeyPath<AttributeDynamicLookup, K1>,
         _ k2: KeyPath<AttributeDynamicLookup, K2>,
@@ -275,7 +413,13 @@ extension AttributedString {
               inout AttributedString.SingleAttributeTransformer<K3>,
               inout AttributedString.SingleAttributeTransformer<K4>,
               inout AttributedString.SingleAttributeTransformer<K5>) -> Void
-    ) -> AttributedString {
+    ) -> AttributedString 
+    where
+        K1.Value : Sendable,
+        K2.Value : Sendable,
+        K3.Value : Sendable,
+        K4.Value : Sendable,
+        K5.Value : Sendable {
         self.transformingAttributes(K1.self, K2.self, K3.self, K4.self, K5.self, c)
     }
 }

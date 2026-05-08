@@ -14,9 +14,11 @@
 import FoundationEssentials
 #endif
 
+// MARK: VerbatimFormatStyle Definition
+
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 extension Date {
-    /// Formats a `Date` using the given format.
+    /// A style that formats a date with an explicitly-specified style.
     public struct VerbatimFormatStyle : Sendable {
         public var timeZone: TimeZone
         public var calendar: Calendar
@@ -32,13 +34,21 @@ extension Date {
             self.timeZone = timeZone
         }
 
-        /// Returns the corresponding `AttributedStyle` which formats the date with  `AttributeScopes.FoundationAttributes.DateFormatFieldAttribute`
+        /// Returns a type erased attributed variant of this style.
+        @available(macOS, deprecated: 15, introduced: 12, message: "Use attributedStyle instead")
+        @available(iOS, deprecated: 18, introduced: 15, message: "Use attributedStyle instead")
+        @available(tvOS, deprecated: 18, introduced: 15, message: "Use attributedStyle instead")
+        @available(watchOS, deprecated: 11, introduced: 8, message: "Use attributedStyle instead")
         public var attributed: AttributedStyle {
             .init(style: .verbatimFormatStyle(self))
         }
 
         public func format(_ value: Date) -> String {
-            return ICUDateFormatter.cachedFormatter(for: self).format(value) ?? value.description
+            guard let fm = ICUDateFormatter.cachedFormatter(for: self), let result = fm.format(value) else {
+                return value.description
+            }
+
+            return result
         }
 
         public func locale(_ locale: Locale) -> Date.VerbatimFormatStyle {
@@ -54,13 +64,100 @@ extension Date.VerbatimFormatStyle : FormatStyle {}
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 extension FormatStyle where Self == Date.VerbatimFormatStyle {
+    /// Returns a style for formatting a date with an explicitly-specified style.
+    ///
+    /// Use this format style only when you need to produce or parse an exact format, such as
+    /// when working with programmatically-produced date strings. For formatting dates that
+    /// people read, use ``FormatStyle/dateTime`` to get a localized ``Date/FormatStyle``
+    /// instead. To use the ISO-8601 standard, use ``FormatStyle/iso8601`` to get a
+    /// ``Date/ISO8601FormatStyle``.
+    ///
+    /// Use the dot-notation form of this type method when the call point allows the use of
+    /// ``Date/VerbatimFormatStyle``. You typically do this when calling the
+    /// ``Date/formatted(_:)`` method of ``Date``.
+    ///
+    /// The following example formats the current date with a verbatim format that uses a
+    /// two-digit month, two-digit day, and default-digits year, separated by slashes. This
+    /// style isn't localized --- it uses this format in any locale, ignoring locale-appropriate
+    /// conventions.
+    ///
+    /// ```swift
+    /// let date = Date()
+    /// let formatted = date.formatted(
+    ///     .verbatim("\(month: .twoDigits)/\(day: .twoDigits)/\(year: .defaultDigits)" as Date.FormatString,
+    ///               locale: .autoupdatingCurrent,
+    ///               timeZone: .current,
+    ///               calendar: .current)) // 12/05/2022
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - format: A ``Date/FormatString`` that provides the explicit components and their
+    ///     respective styles to use when formatting a date.
+    ///   - locale: The locale to use when formatting. Defaults to `nil`.
+    ///   - timeZone: The time zone to use when formatting.
+    ///   - calendar: The calendar to use when formatting.
+    /// - Returns: A date format style that uses the provided format string and timekeeping
+    ///   parameters.
     public static func verbatim(_ format: Date.FormatString, locale: Locale? = nil, timeZone: TimeZone, calendar: Calendar) -> Date.VerbatimFormatStyle { .init(format: format, locale: locale, timeZone: timeZone, calendar: calendar) }
 }
+
+// MARK: ParseableFormatStyle Conformance
 
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 extension Date.VerbatimFormatStyle: ParseableFormatStyle {
     public var parseStrategy: Date.ParseStrategy {
             .init(format: formatPattern, locale: locale, timeZone: timeZone, calendar: calendar, isLenient: false, twoDigitStartDate: Date(timeIntervalSince1970: 0))
+    }
+}
+
+// MARK: Typed Attributed Style
+
+@available(macOS 15, iOS 18, tvOS 18, watchOS 11, *)
+extension Date.VerbatimFormatStyle {
+    /// The type preserving attributed variant of this style.
+    ///
+    /// This style attributes the formatted date with the `AttributeScopes.FoundationAttributes.DateFormatFieldAttribute`.
+    @dynamicMemberLookup
+    public struct Attributed : FormatStyle, Sendable {
+        var base: Date.VerbatimFormatStyle
+
+        public subscript<T>(dynamicMember key: KeyPath<Date.VerbatimFormatStyle, T>) -> T {
+            base[keyPath: key]
+        }
+
+        public subscript<T>(dynamicMember key: WritableKeyPath<Date.VerbatimFormatStyle, T>) -> T {
+            get {
+                base[keyPath: key]
+            }
+            set {
+                base[keyPath: key] = newValue
+            }
+        }
+
+        init(style: Date.VerbatimFormatStyle) {
+            self.base = style
+        }
+
+        public func format(_ value: Date) -> AttributedString {
+            guard let fm = ICUDateFormatter.cachedFormatter(for: base), let (str, attributes) = fm.attributedFormat(value) else {
+                return AttributedString(value.description)
+            }
+
+            return str._attributedStringFromPositions(attributes)
+        }
+
+        public func locale(_ locale: Locale) -> Self {
+            var new = self
+            new.base = base.locale(locale)
+            return new
+        }
+    }
+
+    /// Return the type preserving attributed variant of this style.
+    ///
+    /// This style attributes the formatted date with the `AttributeScopes.FoundationAttributes.DateFormatFieldAttribute`.
+    public var attributedStyle: Attributed {
+        .init(style: self)
     }
 }
 
@@ -71,5 +168,63 @@ extension Date.VerbatimFormatStyle : CustomConsumingRegexComponent {
     public typealias RegexOutput = Date
     public func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Date)? {
         try parseStrategy.consuming(input, startingAt: index, in: bounds)
+    }
+}
+
+// MARK: DiscreteFormatStyle Conformance
+
+@available(macOS 15, iOS 18, tvOS 18, watchOS 11, *)
+extension Date.VerbatimFormatStyle : DiscreteFormatStyle {
+    public func discreteInput(before input: Date) -> Date? {
+        guard let (bound, isIncluded) = bound(for: input, isLower: true) else {
+            return nil
+        }
+
+        return isIncluded ? bound.nextDown : bound
+    }
+
+    public func discreteInput(after input: Date) -> Date? {
+        guard let (bound, isIncluded) = bound(for: input, isLower: false) else {
+            return nil
+        }
+
+        return isIncluded ? bound.nextUp : bound
+    }
+
+    public func input(before input: Date) -> Date? {
+        let result = Calendar.nextAccuracyStep(for: input, direction: .backward)
+
+        return result < input ? result : nil
+    }
+
+    public func input(after input: Date) -> Date? {
+        let result = Calendar.nextAccuracyStep(for: input, direction: .forward)
+
+        return result > input ? result : nil
+    }
+
+    func bound(for input: Date, isLower: Bool) -> (bound: Date, includedInRangeOfInput: Bool)? {
+        var calendar = calendar
+        calendar.timeZone = timeZone
+        return calendar.bound(for: input, isLower: isLower, updateSchedule: ICUDateFormatter.DateFormatInfo.cachedUpdateSchedule(for: self))
+    }
+}
+
+@available(macOS 15, iOS 18, tvOS 18, watchOS 11, *)
+extension Date.VerbatimFormatStyle.Attributed : DiscreteFormatStyle {
+    public func discreteInput(before input: Date) -> Date? {
+        base.discreteInput(before: input)
+    }
+
+    public func discreteInput(after input: Date) -> Date? {
+        base.discreteInput(after: input)
+    }
+
+    public func input(before input: Date) -> Date? {
+        base.input(before: input)
+    }
+
+    public func input(after input: Date) -> Date? {
+        base.input(after: input)
     }
 }

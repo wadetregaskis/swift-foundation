@@ -11,9 +11,11 @@
 //===----------------------------------------------------------------------===//
 
 #if FOUNDATION_FRAMEWORK
-@_implementationOnly @_spi(Unstable) import CollectionsInternal
-#else
-package import _RopeModule
+@_spi(Unstable) internal import CollectionsInternal
+#elseif canImport(_RopeModule)
+internal import _RopeModule
+#elseif canImport(_FoundationCollections)
+internal import _FoundationCollections
 #endif
 
 extension AttributedString {
@@ -42,7 +44,7 @@ extension AttributedString {
 extension AttributedString._InternalRuns {
     /// A metric that assigns each run a size of 1; i.e., the metric corresponding to run offsets.
     ///
-    /// Runs are not divisable under this metric.
+    /// Runs are not divisible under this metric.
     struct RunMetric: RopeMetric {
         typealias Element = AttributedString._InternalRun
         typealias Summary = Element.Summary

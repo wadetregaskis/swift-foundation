@@ -68,6 +68,27 @@ extension PredicateExpressions {
     }
 }
 
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.ConditionalCast : CustomStringConvertible {
+    public var description: String {
+        "ConditionalCast(input: \(input), desiredType: \(_typeName(Desired.self)))"
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.ForceCast : CustomStringConvertible {
+    public var description: String {
+        "ForceCast(input: \(input), desiredType: \(_typeName(Desired.self)))"
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.TypeCheck : CustomStringConvertible {
+    public var description: String {
+        "TypeCheck(input: \(input), desiredType: \(_typeName(Desired.self)))"
+    }
+}
+
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 extension PredicateExpressions.ConditionalCast : StandardPredicateExpression where Input : StandardPredicateExpression {}
 

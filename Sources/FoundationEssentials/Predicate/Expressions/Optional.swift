@@ -111,6 +111,27 @@ extension PredicateExpressions {
     }
 }
 
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.OptionalFlatMap : CustomStringConvertible {
+    public var description: String {
+        "OptionalFlatMap(wrapped: \(wrapped), variable: \(variable), transform: \(transform))"
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.NilCoalesce : CustomStringConvertible {
+    public var description: String {
+        "NilCoalesce(lhs: \(lhs), rhs: \(rhs))"
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.ForcedUnwrap : CustomStringConvertible {
+    public var description: String {
+        "ForcedUnwrap(inner: \(inner))"
+    }
+}
+
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 extension PredicateExpressions.OptionalFlatMap : StandardPredicateExpression where LHS : StandardPredicateExpression, RHS : StandardPredicateExpression {}
 

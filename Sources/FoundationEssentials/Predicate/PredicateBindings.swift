@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_nonSendable
+/// A mapping from a predicates's input variables to their values.
+///
+/// If you define a custom predicate expression type, you must propagate the predicate's bindings to its subexpressions.
+///
+/// If you define a custom predicate type, you must create an instance of this structure, populate it with the predicate's variables, and propagate it throughout the expression tree.
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 public struct PredicateBindings {
     // Store as a values as an array instead of a dictionary (since it is almost always very few elements, this reduces heap allocation and hashing overhead)
@@ -53,3 +57,10 @@ public struct PredicateBindings {
         return mutable
     }
 }
+
+@available(macOS, unavailable, introduced: 14.0)
+@available(iOS, unavailable, introduced: 17.0)
+@available(tvOS, unavailable, introduced: 17.0)
+@available(watchOS, unavailable, introduced: 10.0)
+@available(*, unavailable)
+extension PredicateBindings : Sendable {}

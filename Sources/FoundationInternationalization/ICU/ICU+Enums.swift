@@ -10,11 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if FOUNDATION_FRAMEWORK
-@_implementationOnly import FoundationICU
-#else
-package import FoundationICU
-#endif
+internal import _FoundationICU
 
 #if os(Windows)
 typealias EnumRawType = CInt
@@ -83,6 +79,14 @@ extension UNumberFormatStyle {
     static let spellout = UNUM_SPELLOUT
     static let ordinal = UNUM_ORDINAL
     static let scientific = UNUM_SCIENTIFIC
+    var isRuleBased: Bool {
+        switch self {
+        case .spellout, .ordinal:
+            true
+        default:
+            false
+        }
+    }
 }
 
 extension UNumberFormatAttribute {
@@ -113,6 +117,7 @@ extension UNumberFormatAttribute {
 
 extension UNumberFormatTextAttribute {
     static let defaultRuleSet = UNUM_DEFAULT_RULESET
+    static let currencyCode = UNUM_CURRENCY_CODE
 }
 
 extension UDateRelativeDateTimeFormatterStyle {

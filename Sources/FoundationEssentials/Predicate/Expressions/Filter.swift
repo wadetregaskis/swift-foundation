@@ -20,7 +20,6 @@ extension PredicateExpressions {
         LHS.Output: Sequence,
         RHS.Output == Bool
     {
-        // TODO: Refine Output type to a constrained "some Collection" ?
         public typealias Element = LHS.Output.Element
         public typealias Output = [Element]
         
@@ -45,6 +44,13 @@ extension PredicateExpressions {
     
     public static func build_filter<LHS, RHS>(_ lhs: LHS, _ builder: (Variable<LHS.Output.Element>) -> RHS) -> Filter<LHS, RHS> {
         Filter(lhs, builder)
+    }
+}
+
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.Filter : CustomStringConvertible {
+    public var description: String {
+        "Filter(sequence: \(sequence), variable: \(variable), filter: \(filter))"
     }
 }
 

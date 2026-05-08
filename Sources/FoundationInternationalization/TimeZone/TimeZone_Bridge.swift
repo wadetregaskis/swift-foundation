@@ -12,9 +12,9 @@
 
 #if FOUNDATION_FRAMEWORK
 
-@_implementationOnly import _ForSwiftFoundation
+internal import _ForSwiftFoundation
 import CoreFoundation
-@_implementationOnly import os
+internal import os
 
 /// Wraps an `NSTimeZone` with a more Swift-like `TimeZone` API.
 /// This is only used in the case where we have a custom Objective-C subclass of `NSTimeZone`.
@@ -82,7 +82,11 @@ internal final class _TimeZoneBridged: _TimeZoneProtocol, @unchecked Sendable {
     func localizedName(for style: TimeZone.NameStyle, locale: Locale?) -> String? {
         _timeZone.localizedName(style, locale: locale)
     }
-    
+
+    func rawAndDaylightSavingTimeOffset(for date: Date, repeatedTimePolicy: TimeZone.DaylightSavingTimePolicy = .former, skippedTimePolicy: TimeZone.DaylightSavingTimePolicy = .former) -> (rawOffset: Int, daylightSavingOffset: TimeInterval) {
+        (_timeZone.secondsFromGMT(for: date), _timeZone.daylightSavingTimeOffset(for: date))
+    }
+
     func bridgeToNSTimeZone() -> NSTimeZone {
         _timeZone.copy() as! NSTimeZone
     }

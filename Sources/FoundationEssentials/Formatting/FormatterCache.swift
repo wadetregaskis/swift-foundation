@@ -10,12 +10,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-package struct FormatterCache<Format : Hashable & Sendable, FormattingType: Sendable>: Sendable {
+internal import Synchronization
 
+package struct FormatterCache<Format : Hashable & Sendable, FormattingType: Sendable>: Sendable, ~Copyable {
     let countLimit = 100
 
-    private let _lock: LockedState<[Format: FormattingType]>
-    package func formatter(for config: Format, creator: () -> FormattingType) -> FormattingType {
+    private let _lock: Mutex<[Format: FormattingType]>
+    package func formatter(for config: Format, creator: () throws -> FormattingType) rethrows -> FormattingType {
         let existed = _lock.withLock { cache in
             return cache [config]
         }
@@ -25,7 +26,7 @@ package struct FormatterCache<Format : Hashable & Sendable, FormattingType: Send
         }
 
         // Call `creator()` outside of the cache's lock to avoid blocking
-        let df = creator()
+        let df = try creator()
 
         _lock.withLockExtendingLifetimeOfState { cache in
             if cache.count > countLimit {
@@ -44,12 +45,12 @@ package struct FormatterCache<Format : Hashable & Sendable, FormattingType: Send
     }
 
     package subscript(key: Format) -> FormattingType? {
-        _lock.withLock {
+        _lock.withLockExtendingLifetimeOfState {
             $0[key]
         }
     }
 
     package init() {
-        _lock = LockedState(initialState: [Format: FormattingType]())
+        _lock = Mutex([Format: FormattingType]())
     }
 }

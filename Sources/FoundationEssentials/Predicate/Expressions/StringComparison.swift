@@ -41,6 +41,13 @@ extension PredicateExpressions {
     }
 }
 
+@available(macOS 14.4, iOS 17.4, tvOS 17.4, watchOS 10.4, *)
+extension PredicateExpressions.StringCaseInsensitiveCompare : CustomStringConvertible {
+    public var description: String {
+        "StringCaseInsensitiveCompare(root: \(root), other: \(other))"
+    }
+}
+
 @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
 extension PredicateExpressions.StringCaseInsensitiveCompare : StandardPredicateExpression where Root : StandardPredicateExpression, Other : StandardPredicateExpression {}
 

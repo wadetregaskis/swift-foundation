@@ -16,6 +16,15 @@ import FoundationEssentials
 
 @available(macOS 12.0, iOS 15.0, tvOS 15.0, watchOS 8.0, *)
 extension Date {
+    /// A type that represents a fixed date format string using string interpolation.
+    ///
+    /// Use `Date.FormatString` with ``Date/VerbatimFormatStyle`` or ``Date/ParseStrategy``
+    /// to create fixed-pattern format strings for dates. You build format strings using
+    /// string interpolation with date field symbols:
+    ///
+    /// ```swift
+    /// let format: Date.FormatString = "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits)"
+    /// ```
     public struct FormatString : Hashable, Sendable {
         internal var rawFormat: String = ""
     }
@@ -46,89 +55,154 @@ extension Date.FormatString : ExpressibleByStringInterpolation {
         rawFormat = value.asDateFormatLiteral()
     }
 
+    /// The string interpolation type for building date format strings.
     public struct StringInterpolation : StringInterpolationProtocol, Sendable {
         public typealias StringLiteralType = String
         fileprivate var format: String = ""
+
+        /// Creates a new string interpolation with the given capacities.
         public init(literalCapacity: Int, interpolationCount: Int) {}
 
+        /// Appends a literal string segment to the format string.
         mutating public func appendLiteral(_ literal: String) {
             format += literal.asDateFormatLiteral()
         }
 
+        /// Appends an era symbol to the format string.
         mutating public func appendInterpolation(era: Date.FormatStyle.Symbol.Era) {
-            format.append(era.option.rawValue)
+            guard let option = era.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a year symbol to the format string.
         mutating public func appendInterpolation(year: Date.FormatStyle.Symbol.Year) {
-            format.append(year.option.rawValue)
+            guard let option = year.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a year-for-week-of-year symbol to the format string.
         mutating public func appendInterpolation(yearForWeekOfYear: Date.FormatStyle.Symbol.YearForWeekOfYear) {
-            format.append(yearForWeekOfYear.option.rawValue)
+            guard let option = yearForWeekOfYear.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a cyclic year symbol to the format string.
         mutating public func appendInterpolation(cyclicYear: Date.FormatStyle.Symbol.CyclicYear) {
-            format.append(cyclicYear.option.rawValue)
+            guard let option = cyclicYear.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a quarter symbol to the format string.
         mutating public func appendInterpolation(quarter: Date.FormatStyle.Symbol.Quarter) {
-            format.append(quarter.option.rawValue)
+            guard let option = quarter.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a standalone quarter symbol to the format string.
         mutating public func appendInterpolation(standaloneQuarter: Date.FormatStyle.Symbol.StandaloneQuarter) {
             format.append(standaloneQuarter.option.rawValue)
         }
 
+        /// Appends a month symbol to the format string.
         mutating public func appendInterpolation(month: Date.FormatStyle.Symbol.Month) {
-            format.append(month.option.rawValue)
+            guard let option = month.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a standalone month symbol to the format string.
         mutating public func appendInterpolation(standaloneMonth: Date.FormatStyle.Symbol.StandaloneMonth) {
             format.append(standaloneMonth.option.rawValue)
         }
 
+        /// Appends a week symbol to the format string.
         mutating public func appendInterpolation(week: Date.FormatStyle.Symbol.Week) {
-            format.append(week.option.rawValue)
+            guard let option = week.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a day symbol to the format string.
         mutating public func appendInterpolation(day: Date.FormatStyle.Symbol.Day) {
-            format.append(day.option.rawValue)
+            guard let option = day.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a day-of-year symbol to the format string.
         mutating public func appendInterpolation(dayOfYear: Date.FormatStyle.Symbol.DayOfYear) {
-            format.append(dayOfYear.option.rawValue)
+            guard let option = dayOfYear.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a weekday symbol to the format string.
         mutating public func appendInterpolation(weekday: Date.FormatStyle.Symbol.Weekday) {
-            format.append(weekday.option.rawValue)
+            guard let option = weekday.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a standalone weekday symbol to the format string.
         mutating public func appendInterpolation(standaloneWeekday: Date.FormatStyle.Symbol.StandaloneWeekday) {
             format.append(standaloneWeekday.option.rawValue)
         }
 
+        /// Appends a day period symbol to the format string.
         mutating public func appendInterpolation(dayPeriod: Date.FormatStyle.Symbol.DayPeriod) {
-            format.append(dayPeriod.option.rawValue)
+            guard let option = dayPeriod.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
+        /// Appends a verbatim hour symbol to the format string.
         mutating public func appendInterpolation(hour: Date.FormatStyle.Symbol.VerbatimHour) {
             format.append(hour.option.rawValue)
         }
 
+        /// Appends a minute symbol to the format string.
         mutating public func appendInterpolation(minute: Date.FormatStyle.Symbol.Minute) {
-            format.append(minute.option.rawValue)
+            guard let option = minute.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
         mutating public func appendInterpolation(second: Date.FormatStyle.Symbol.Second) {
-            format.append(second.option.rawValue)
+            guard let option = second.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
         mutating public func appendInterpolation(secondFraction: Date.FormatStyle.Symbol.SecondFraction) {
-            format.append(secondFraction.option.rawValue)
+            guard let option = secondFraction.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
 
         mutating public func appendInterpolation(timeZone: Date.FormatStyle.Symbol.TimeZone) {
-            format.append(timeZone.option.rawValue)
+            guard let option = timeZone.option else {
+                return
+            }
+            format.append(option.rawValue)
         }
     }
 }

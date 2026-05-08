@@ -74,7 +74,7 @@ extension String {
         var associatedSelector: Selector {
             guard let selector = Self.validAlgorithms[self] else {
                 fatalError("""
-                Attempted to retreive selector from a \
+                Attempted to retrieve selector from a \
                 String.StandardSortComparator with an invalid configuration.
                 """)
             }
@@ -144,7 +144,12 @@ extension String {
         public func compare(_ lhs: String, _ rhs: String) -> ComparisonResult {
 #if FOUNDATION_FRAMEWORK
             // https://github.com/apple/swift-foundation/issues/284
-            return lhs.compare(rhs, options: options, locale: Locale.current).withOrder(order)
+            
+            if isLocalized {
+                return lhs.compare(rhs, options: options, locale: Locale.current).withOrder(order)
+            } else {
+                return lhs.compare(rhs, options: options).withOrder(order)
+            }
 #else
             // TODO: Until compare(_:options:locale:) is ported to FoundationInternationalization, only support unlocalized
             return lhs.compare(rhs, options: options).withOrder(order)
@@ -265,17 +270,14 @@ extension SortComparator where Self == String.Comparator {
 #if FOUNDATION_FRAMEWORK
     // https://github.com/apple/swift-foundation/issues/284
     
-    /// Compares `String`s as compared by the Finder.
-    ///
-    /// Uses a localized, numeric comparison in the current locale.
-    ///
-    /// The default `String.Comparator` used in `String` comparisons.
+    /// A comparator that compares a string using a localized, numeric
+    /// comparison in the current locale.
     public static var localizedStandard: String.Comparator {
         String.Comparator(.localizedStandard)
     }
 
-    /// Compares `String`s using a localized comparison in the current
-    /// locale.
+    /// A comparator that compares a string using a localized comparison in
+    /// the current locale.
     public static var localized: String.Comparator {
         String.Comparator(.localized)
     }
