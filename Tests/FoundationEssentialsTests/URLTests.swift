@@ -2058,6 +2058,19 @@ private struct URLTests {
         #expect(url.pathComponents == ["/", "a"])
     }
 
+    @Test func filePathPercentEncodedFalseResolvesAgainstBase() throws {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1011
+        // For a relative file URL with a base, `path(percentEncoded: false)` must resolve
+        // against the base URL — matching the documented behavior of `.path` — rather
+        // than returning just the relative component.
+        let base = URL(fileURLWithPath: "/System")
+        let relative = URL(string: "Library", relativeTo: base)!
+
+        #expect(relative.path == "/System/Library")
+        #expect(relative.path(percentEncoded: false) == "/System/Library")
+        #expect(relative.path(percentEncoded: true) == "/System/Library")
+    }
+
     @Test func lastPathComponent() throws {
         var url = URL(filePath: "/")
         #expect(url.lastPathComponent == "/")
