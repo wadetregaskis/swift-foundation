@@ -767,12 +767,12 @@ extension JSONDecoderImpl: Decoder {
                 if isHex {
                     if numberBuffer.first! == UInt8(ascii: "-") {
                         guard let int = Int64(prevalidatedJSON5Buffer: numberBuffer, isHex: isHex), let decimal = Decimal(exactly: int) else {
-                            throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                            throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                         }
                         return decimal
                     } else {
                         guard let int = UInt64(prevalidatedJSON5Buffer: numberBuffer, isHex: isHex), let decimal = Decimal(exactly: int) else {
-                            throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                            throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                         }
                         return decimal
                     }
@@ -785,7 +785,7 @@ extension JSONDecoderImpl: Decoder {
                     case .success(let result, _):
                         return result
                     case .overlargeValue:
-                        throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                        throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                     case .parseFailure:
                         throw JSON5Scanner.validateNumber(from: numberBuffer.suffix(from: digitsStartPtr), fullSource: fullSource)
                     }
@@ -798,7 +798,7 @@ extension JSONDecoderImpl: Decoder {
                 case .success(let result, _):
                     return result
                 case .overlargeValue:
-                    throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                    throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                 case .parseFailure:
                     throw JSONScanner.validateNumber(from: numberBuffer.suffix(from: digitsStartPtr), fullSource: fullSource)
                 }
@@ -924,12 +924,12 @@ extension JSONDecoderImpl: Decoder {
                     if isHex {
                         if numberBuffer.first.unsafelyUnwrapped == UInt8(ascii: "-") {
                             guard let int = Int64(prevalidatedJSON5Buffer: numberBuffer, isHex: isHex), let float = T(exactly: int) else {
-                                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                             }
                             return float
                         } else {
                             guard let int = UInt64(prevalidatedJSON5Buffer: numberBuffer, isHex: isHex), let float = T(exactly: int) else {
-                                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                             }
                             return float
                         }
@@ -940,14 +940,14 @@ extension JSONDecoderImpl: Decoder {
                         // While strtod does set ERANGE in the either case, we don't rely on it because setting errno to 0 first and then check the result is surprisingly expensive. For values "rounded" to infinity, we reject those out of hand, unless it's an explicit JSON5 infinity/nan value. For values "rounded" down to zero, we perform check for any non-zero digits in the input, which turns out to be much faster.
                         if floatingPoint.isFinite {
                             guard floatingPoint != 0 || Self.isTrueZero(numberBuffer) else {
-                                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                             }
                             return floatingPoint
                         } else {
                             if json5, isSpecialJSON5DoubleValue {
                                 return floatingPoint
                             } else {
-                                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                             }
                         }
                     }
@@ -962,11 +962,11 @@ extension JSONDecoderImpl: Decoder {
                         // While strtod does set ERANGE in the either case, we don't rely on it because setting errno to 0 first and then check the result is surprisingly expensive. For values "rounded" to infinity, we reject those out of hand. For values "rounded" down to zero, we perform check for any non-zero digits in the input, which turns out to be much faster.
                         if floatingPoint.isFinite {
                             guard floatingPoint != 0 || Self.isTrueZero(numberBuffer) else {
-                                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                             }
                             return floatingPoint
                         } else {
-                            throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                            throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                         }
                     }
 
@@ -1024,7 +1024,7 @@ extension JSONDecoderImpl: Decoder {
 
                 // NaN and Infinity values are not representable as Integers.
                 if isSpecialFloatValue {
-                    throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                    throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
                 }
             } else {
                 digitBeginning = try JSONScanner.prevalidateJSONNumber(from: numberBuffer, hasExponent: hasExponent, fullSource: fullSource)
@@ -1046,7 +1046,7 @@ extension JSONDecoderImpl: Decoder {
             // have already transformed the non-integer "1.0000000000000001" into 1, etc.
             // Proper lossless behavior should be implemented by the parser.
             guard let value = T(exactly: double) else {
-                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
             }
 
             // The distance between Double(s) is >=2 from ±2^53.
@@ -1061,7 +1061,7 @@ extension JSONDecoderImpl: Decoder {
         let decimalParseResult = Decimal._decimal(from: numberBuffer, matchEntireString: true).asOptional
         if let decimal = decimalParseResult.result {
             guard let value = T(decimal) else {
-                throw JSONError.numberIsNotRepresentableInSwift(parsed: String(decoding: numberBuffer, as: UTF8.self))
+                throw JSONDecoderImpl.numberNotRepresentableError(numberBuffer: numberBuffer, for: codingPathNode.path(byAppending: additionalKey))
             }
             return value
         }
@@ -1077,6 +1077,14 @@ extension JSONDecoderImpl: Decoder {
         return DecodingError.typeMismatch(type, .init(
             codingPath: path,
             debugDescription: "Expected to decode \(type) but found \(value.debugDataTypeDescription) instead."
+        ))
+    }
+
+    static func numberNotRepresentableError(numberBuffer: BufferView<UInt8>, for path: [CodingKey]) -> DecodingError {
+        let parsed = String(decoding: numberBuffer, as: UTF8.self)
+        return DecodingError.dataCorrupted(.init(
+            codingPath: path,
+            debugDescription: "Number \(parsed) is not representable in Swift."
         ))
     }
 }

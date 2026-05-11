@@ -1195,6 +1195,26 @@ private struct JSONEncoderTests {
         }
     }
 
+    @Test func decodeNonIntegralNumberAsIntPreservesContext() throws {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1604
+        // Decoding a fractional JSON number as an Int should produce a DecodingError.dataCorrupted
+        // with a non-empty codingPath and an informative debugDescription, not a generic
+        // "The given data was not valid JSON." error with empty codingPath.
+        struct Object: Decodable {
+            var foo: Int
+        }
+        let json = #"{ "foo": 123.45 }"#.data(using: .utf8)!
+        do {
+            _ = try JSONDecoder().decode(Object.self, from: json)
+            Issue.record("Expected decode to throw")
+        } catch let DecodingError.dataCorrupted(context) {
+            #expect(context.codingPath.map(\.stringValue) == ["foo"])
+            #expect(context.debugDescription.contains("123.45"))
+        } catch {
+            Issue.record("Expected DecodingError.dataCorrupted, got: \(error)")
+        }
+    }
+
     @Test func equivalentUTF8Sequences() throws {
         let json =
 """
