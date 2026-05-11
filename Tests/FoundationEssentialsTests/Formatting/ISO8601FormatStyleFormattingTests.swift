@@ -40,6 +40,15 @@ private struct ISO8601FormatStyleFormattingTests {
         #expect(viaInit == expected)
     }
 
+    @Test func iso8601FractionalSecondsParseMatchesTimeInterval() throws {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1561
+        // Parsing "2020-01-13T09:25:40.621Z" should produce a Date equivalent to
+        // Date(timeIntervalSince1970: 1_578_907_540.621).
+        let parsed = try Date("2020-01-13T09:25:40.621Z", strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+        let expected = Date(timeIntervalSince1970: 1_578_907_540.621)
+        #expect(abs(parsed.timeIntervalSince(expected)) < 0.001)
+    }
+
     @Test func iso8601FractionalSecondsRoundTrip() throws {
         // Regression test for https://github.com/swiftlang/swift-foundation/issues/963
         // Formatting fractional seconds used `.rounded(.towardZero)` which, combined with
