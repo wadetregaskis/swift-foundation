@@ -228,6 +228,7 @@ private struct ISO8601FormatStyleParsingTests {
             ("2020-03-05T12:00:00GMT", Date.ISO8601FormatStyle().year().month().day().time(includingFractionalSeconds: false).timeSeparator(.colon).timeZone(separator: .colon)), // allow GMT
             ("2020-03-05T13:00:00UTC+1:00", Date.ISO8601FormatStyle().year().month().day().time(includingFractionalSeconds: false).timeSeparator(.colon).timeZone(separator: .colon)), // allow UTC offsets
             ("2020-03-05T13:00:00UTC+01", Date.ISO8601FormatStyle().year().month().day().time(includingFractionalSeconds: false).timeSeparator(.colon).timeZone(separator: .colon)), // allow hours-only (2 digit)
+            ("2020-03-05T13:00:00+01", Date.ISO8601FormatStyle().year().month().day().time(includingFractionalSeconds: false).timeSeparator(.colon).timeZone(separator: .colon)), // allow hours-only (2 digit)
             ("2020-03-05T11:00:00GMT-1:00", Date.ISO8601FormatStyle().year().month().day().time(includingFractionalSeconds: false).timeSeparator(.colon).timeZone(separator: .colon)), // allow GMT offsets
             ("2020-03-05 12:00:00+0000", Date.ISO8601FormatStyle().year().month().day().dateTimeSeparator(.space).time(includingFractionalSeconds: false).timeZone(separator: .omitted)),
             ("2020-03-05 11:00:00-0100", Date.ISO8601FormatStyle().year().month().day().dateTimeSeparator(.space).time(includingFractionalSeconds: false).timeZone(separator: .omitted)),
