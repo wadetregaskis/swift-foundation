@@ -2058,6 +2058,21 @@ private struct URLTests {
         #expect(url.pathComponents == ["/", "a"])
     }
 
+    @Test func fileURLPathPreservesQuestionMarkAndHashInBase() {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1367
+        // For a file URL whose path literally contains '?' or '#', resolving a relative
+        // URL against it must not truncate the path at the first '?'/'#'.
+        let basePath = "/Users/test/Test1 Test2? Test3/Test4"
+        let baseURL = URL(fileURLWithPath: basePath, isDirectory: true)
+        let fileURL = URL(fileURLWithPath: "../Test5.txt", isDirectory: false, relativeTo: baseURL)
+        #expect(fileURL.deletingLastPathComponent().path == baseURL.deletingLastPathComponent().path)
+
+        let basePath2 = "/Users/test/A#B/C"
+        let baseURL2 = URL(fileURLWithPath: basePath2, isDirectory: true)
+        let fileURL2 = URL(fileURLWithPath: "../D.txt", isDirectory: false, relativeTo: baseURL2)
+        #expect(fileURL2.deletingLastPathComponent().path == baseURL2.deletingLastPathComponent().path)
+    }
+
     @Test func appendingEmptyQueryItemsLeavesURLUnchanged() throws {
         // Regression test for https://github.com/swiftlang/swift-foundation/issues/1548
         // Appending an empty list of query items to a URL that has no existing query
