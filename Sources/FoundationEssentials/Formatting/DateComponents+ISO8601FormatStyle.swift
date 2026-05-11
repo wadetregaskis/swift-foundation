@@ -346,7 +346,11 @@ extension DateComponents.ISO8601FormatStyle : FormatStyle {
                 
                 if includingFractionalSeconds {
                     let ns = components.nanosecond ?? 0
-                    let ms = Int((Double(ns) / 1_000_000.0).rounded(.towardZero))
+                    // Round to nearest millisecond; the .nanosecond component extracted
+                    // from a Date typically carries floating-point noise (e.g. 122_999_999
+                    // for an intended 123_000_000), so truncating-toward-zero produced an
+                    // off-by-one. Clamp to 999 to avoid carrying into the seconds field.
+                    let ms = min((ns + 500_000) / 1_000_000, 999)
                     buffer.appendElement(asciiPeriod)
                     buffer.append(ms, zeroPad: 3)
                 }

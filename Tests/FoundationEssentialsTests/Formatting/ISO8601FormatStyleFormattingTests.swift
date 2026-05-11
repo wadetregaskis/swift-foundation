@@ -23,6 +23,21 @@ import Testing
 @Suite("ISO8601FormatStyle Formatting")
 private struct ISO8601FormatStyleFormattingTests {
 
+    @Test func iso8601FractionalSecondsRoundTrip() throws {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/963
+        // Formatting fractional seconds used `.rounded(.towardZero)` which, combined with
+        // float-precision artifacts in the extracted .nanosecond component, produced an
+        // off-by-one in the millisecond field — e.g. 0.123 rendered as ".122".
+        let date = Date(timeIntervalSince1970: 1_674_036_251.123)
+        let style = Date.ISO8601FormatStyle.iso8601
+            .year().month().day().time(includingFractionalSeconds: true)
+        let encoded = style.format(date)
+        #expect(encoded == "2023-01-18T10:04:11.123")
+        // Parsing back should land within sub-millisecond of the original.
+        let parsed = try style.parse(encoded)
+        #expect(abs(parsed.timeIntervalSince(date)) < 0.001)
+    }
+
     @Test func iso8601Format() throws {
         let date = Date(timeIntervalSinceReferenceDate: 665076946.0)
         let fractionalSecondsDate = Date(timeIntervalSinceReferenceDate: 665076946.011)
