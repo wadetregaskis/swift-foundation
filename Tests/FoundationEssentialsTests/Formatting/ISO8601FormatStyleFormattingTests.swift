@@ -23,6 +23,23 @@ import Testing
 @Suite("ISO8601FormatStyle Formatting")
 private struct ISO8601FormatStyleFormattingTests {
 
+    @Test func iso8601ParseHourOnlyTimeZone() throws {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1159
+        // ISO8601 permits a time zone offset given as `±[hh]` (hour only, no minutes).
+        let style = Date.ISO8601FormatStyle()
+        let parsed = try style.parse("1988-11-08T05:30:00+00")
+        let expected = try style.parse("1988-11-08T05:30:00+0000")
+        #expect(parsed == expected)
+
+        let parsedNeg = try style.parse("1988-11-08T05:30:00-05")
+        let expectedNeg = try style.parse("1988-11-08T05:30:00-0500")
+        #expect(parsedNeg == expectedNeg)
+
+        // Also exercise the Date(_:strategy:) entry point shown in the issue.
+        let viaInit = try Date("1988-11-08T05:30:00+00", strategy: .iso8601)
+        #expect(viaInit == expected)
+    }
+
     @Test func iso8601FractionalSecondsRoundTrip() throws {
         // Regression test for https://github.com/swiftlang/swift-foundation/issues/963
         // Formatting fractional seconds used `.rounded(.towardZero)` which, combined with
