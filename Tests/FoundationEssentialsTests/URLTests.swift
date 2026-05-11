@@ -2058,6 +2058,16 @@ private struct URLTests {
         #expect(url.pathComponents == ["/", "a"])
     }
 
+    @Test func fileURLPathPreservesHashInBase() {
+        // Regression test for https://github.com/swiftlang/swift-foundation/issues/1367
+        // For a file URL whose path literally contains '#', resolving a relative
+        // URL against it must not truncate the path at the first '#'.
+        let basePath = "/Users/test/A#B/C"
+        let baseURL = URL(fileURLWithPath: basePath, isDirectory: true)
+        let fileURL = URL(fileURLWithPath: "../D.txt", isDirectory: false, relativeTo: baseURL)
+        #expect(fileURL.deletingLastPathComponent().path == baseURL.deletingLastPathComponent().path)
+    }
+
     @Test func filePathPercentEncodedFalseResolvesAgainstBase() throws {
         // Regression test for https://github.com/swiftlang/swift-foundation/issues/1011
         // For a relative file URL with a base, `path(percentEncoded: false)` must resolve
